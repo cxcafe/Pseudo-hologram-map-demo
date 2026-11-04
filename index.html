@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MapLibre GL JSとOpenFreeMapで作る、擬似ホログラム風3Dマップのデモです。">
+  <title>擬似ホログラム風マップ｜MapLibre GL JS</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    .demo-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      align-items: center;
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(105,236,255,.33);
+      border-radius: 8px;
+      background: rgba(6,25,42,.8);
+    }
+    .demo-options fieldset {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+    .demo-options legend {
+      float: left;
+      margin: 0 11px 0 0;
+      padding: 0;
+      color: #9ab5c4;
+      font-size: .73rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      line-height: 36px;
+    }
+    .demo-options button {
+      min-height: 36px;
+      padding: 6px 13px;
+      border: 1px solid rgba(105,236,255,.45);
+      border-radius: 4px;
+      background: rgba(4,30,43,.92);
+      color: #d8f8ff;
+      font: inherit;
+      font-size: .82rem;
+      line-height: 1.2;
+      cursor: pointer;
+    }
+    .demo-options button[aria-pressed="true"] {
+      background: rgba(105,236,255,.22);
+      border-color: #69ecff;
+      color: #e4faff;
+      font-weight: 700;
+    }
+    .demo-options button:hover:not(:disabled) { background: rgba(105,236,255,.16); }
+    .demo-options button:focus-visible { outline: 2px solid #69ecff; outline-offset: 2px; }
+    .demo-options button:disabled { opacity: .5; cursor: wait; }
+    @media (max-width: 600px) {
+      .demo-options { gap: 10px; padding: 12px; }
+      .demo-options fieldset { width: 100%; }
+      .demo-options legend { min-width: 88px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">INTERACTIVE GEO / PSEUDO HOLOGRAM</p>
+    <h1>擬似ホログラム風マップ｜MapLibre GL JS</h1>
+    <p class="lead">「MapLibre GL JS」を利用した建物の立体表示 × 斜め視点 × 発光色 × 固定情報カード。<br>
+    実際の空間投影ではなく、WebGLによる3D建物とCSSの重ね合わせで表現した「擬似的な」ホログラム演出です。（マウスで地図を動かせます）</p>
+    <div id="demo-options" class="demo-options" aria-label="地図の表示切り替え">
+      <fieldset>
+        <legend>MAP STYLE</legend>
+        <button type="button" data-map-style="dark" aria-pressed="true" disabled>Dark</button>
+        <button type="button" data-map-style="positron" aria-pressed="false" disabled>Positron</button>
+      </fieldset>
+      <fieldset>
+        <legend>MARKERS</legend>
+        <button type="button" data-pin-mode="single" aria-pressed="false" disabled>1 PIN</button>
+        <button type="button" data-pin-mode="multiple" aria-pressed="true" disabled>MULTI PIN</button>
+      </fieldset>
+    </div>
+
+    <section id="holo-map-shell" aria-label="3D地図">
+      <div id="holo-map" role="region" aria-label="操作できる3D地図"></div>
+      <div id="map-status" role="status">地図を読み込み中…</div>
+
+      <aside id="holo-place-card" aria-label="所在地情報">
+        <button id="holo-card-close" class="card-close-button" type="button" aria-label="所在地情報を閉じる">×</button>
+        <div class="card-label">LOCATION / SELECTED</div>
+        <h2 id="place-name"></h2>
+        <p id="place-address"></p>
+        <a id="place-map-link" target="_blank" rel="noopener noreferrer">Googleマップで開く</a>
+      </aside>
+
+      <div class="map-hud" aria-hidden="true">
+        <span id="hud-zoom">ZOOM —</span><span id="hud-pitch">PITCH —</span><span id="hud-bearing">BEARING —</span>
+      </div>
+      <i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i>
+      <i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>
+    </section>
+    <footer class="site-footer">© 2026 Ivuno.com</footer>
+  </main>
+
+  <script>
+    (() => {
+      const panel = document.getElementById('demo-options');
+      const styleButtons = [...panel.querySelectorAll('[data-map-style]')];
+      const pinButtons = [...panel.querySelectorAll('[data-pin-mode]')];
+
+      const select = (buttons, selected, property) => {
+        buttons.forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset[property] === selected));
+        });
+      };
+
+      panel.addEventListener('click', (event) => {
+        const button = event.target.closest('button');
+        if (!button || button.disabled || !panel.contains(button)) return;
+
+        if (button.dataset.mapStyle) {
+          document.dispatchEvent(new CustomEvent('holo-map:request-style', {
+            detail: { style: button.dataset.mapStyle }
+          }));
+        } else if (button.dataset.pinMode) {
+          document.dispatchEvent(new CustomEvent('holo-map:request-pins', {
+            detail: { mode: button.dataset.pinMode }
+          }));
+        }
+      });
+
+      let ready = false;
+      document.addEventListener('holo-map:ready', () => {
+        ready = true;
+        [...styleButtons, ...pinButtons].forEach((button) => { button.disabled = false; });
+      });
+
+      document.addEventListener('holo-map:state', (event) => {
+        const { style, pinMode, changingStyle } = event.detail;
+        select(styleButtons, style, 'mapStyle');
+        select(pinButtons, pinMode, 'pinMode');
+        styleButtons.forEach((button) => { button.disabled = !ready || changingStyle; });
+      });
+    })();
+  </script>
+  <script defer src="./app.js"></script>
+</body>
+</html>

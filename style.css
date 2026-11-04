@@ -1,0 +1,292 @@
+:root {
+  color-scheme: dark;
+  --page-bg: #07101c;
+  --page-text: #e4f6fc;
+  --accent: #69ecff;
+  --accent-soft: rgba(105, 236, 255, .18);
+  --panel-bg: rgba(6, 25, 42, .94);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--page-bg);
+  color: var(--page-text);
+  font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  line-height: 1.65;
+}
+.page {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 60px) 0 44px;
+}
+.eyebrow {
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .20em;
+  margin: 0 0 8px;
+}
+h1 { margin: 0; font-size: clamp(1.45rem, 3vw, 2.35rem); line-height: 1.35; }
+.lead { margin: 12px 0 26px; color: #9ab5c4; font-size: .94rem; }
+
+#holo-map-shell {
+  --zoom-divider-color: #69ecff;
+  --control-icon-color: #69ecff;
+  --control-button-size: 44px;
+  --card-width: 30%;
+  --card-max-height: 55%;
+  --card-padding: 1.5%;
+  --card-font-size: 1rem;
+  --title-font-size: 1.25em;
+  --address-font-size: 1em;
+  --link-font-size: .95em;
+  --card-top: 10px;
+  --card-left: 10px;
+
+  position: relative;
+  height: var(--map-height, 400px);
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(105, 236, 255, .55);
+  border-radius: 10px;
+  background: #071c2a;
+  box-shadow: 0 0 0 1px rgba(105,236,255,.08), 0 20px 50px rgba(0,0,0,.36), inset 0 0 34px rgba(24,178,210,.12);
+}
+#holo-map { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* 装飾レイヤーが地図のドラッグやズーム操作を妨げないようにする。 */
+#holo-map-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(110,239,255,.027) 0, rgba(110,239,255,.027) 1px, transparent 1px, transparent 5px),
+    radial-gradient(ellipse at 55% 55%, transparent 30%, rgba(0,15,26,.23) 100%);
+}
+.corner {
+  position: absolute;
+  z-index: 8;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  border-color: var(--accent);
+  border-style: solid;
+  filter: drop-shadow(0 0 5px rgba(105,236,255,.6));
+}
+.corner.tl { top: 6px; left: 6px; border-width: 2px 0 0 2px; }
+.corner.tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+.corner.bl { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; }
+.corner.br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+#holo-place-card {
+  position: absolute;
+  top: var(--card-top);
+  left: var(--card-left);
+  z-index: 9;
+  width: var(--card-width);
+  max-width: var(--card-width);
+  min-width: 0;
+  height: auto;
+  max-height: var(--card-max-height);
+  margin: 0;
+  padding: var(--card-padding);
+  padding-right: max(var(--card-padding), 46px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(105,236,255,.53);
+  border-radius: 5px;
+  background: var(--panel-bg);
+  box-shadow: 0 5px 24px rgba(0,0,0,.35), inset 0 0 16px rgba(27,173,211,.07);
+  color: var(--page-text);
+  font-size: var(--card-font-size);
+  line-height: 1.45;
+}
+#holo-place-card .card-close-button {
+  display: flex;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(105,236,255,.53);
+  border-radius: 4px;
+  background: rgba(4,30,43,.92);
+  color: var(--accent);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+#holo-place-card .card-close-button:hover,
+#holo-place-card .card-close-button:focus-visible {
+  background: rgba(105,236,255,.2);
+}
+#holo-place-card .card-label {
+  font-size: .62em;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--accent);
+  margin: 0 0 .55em;
+}
+#holo-place-card h2 {
+  margin: 0 0 .5em;
+  padding: 0;
+  color: #f0fcff;
+  font-size: var(--title-font-size);
+  line-height: 1.35;
+  font-weight: 700;
+}
+#holo-place-card p {
+  margin: 0 0 .75em;
+  padding: 0;
+  color: #b7ced9;
+  font-size: var(--address-font-size);
+  line-height: 1.5;
+}
+#holo-place-card a {
+  display: inline-block;
+  padding: .45em .8em;
+  margin: 0;
+  border: 1px solid rgba(105,236,255,.65);
+  border-radius: 3px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  text-decoration: none;
+  font-size: var(--link-font-size);
+  line-height: 1.4;
+}
+#holo-place-card a:hover,
+#holo-place-card a:focus-visible { background: rgba(105,236,255,.28); }
+#holo-place-card:not(.is-open) { display: none; }
+#holo-place-card.is-highlighted { animation: card-pulse .6s ease-out; }
+@keyframes card-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(105,236,255,.7); }
+  100% { box-shadow: 0 0 0 16px rgba(105,236,255,0); }
+}
+.holo-marker { cursor: pointer; }
+.holo-marker img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain;
+  filter: drop-shadow(0 0 7px rgba(105,236,255,.75));
+}
+.map-hud {
+  position: absolute;
+  top: 10px;
+  right: 68px;
+  z-index: 8;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 46px;
+  padding: 5px 8px;
+  border: 1px solid rgba(105,236,255,.33);
+  border-radius: 3px;
+  color: var(--accent);
+  background: rgba(2,16,30,.86);
+  font: 11px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.map-hud span + span { padding-left: 7px; border-left: 1px solid rgba(105,236,255,.3); }
+#map-status {
+  position: absolute; inset: 0; z-index: 2;
+  display: grid; place-items: center;
+  color: var(--accent);
+  pointer-events: none;
+  font-size: .8rem;
+  letter-spacing: .07em;
+}
+#map-status[hidden] { display: none; }
+/* 画像マーカーの透明領域が重なっても操作ボタンを優先する。 */
+#holo-map-shell .maplibregl-ctrl-top-right {
+  z-index: 1000;
+}
+#holo-map-shell .maplibregl-ctrl-group {
+  width: calc(var(--control-button-size) + 2px);
+  overflow: hidden;
+  background: rgba(4, 30, 43, .92);
+  border: 1px solid rgba(105,236,255,.4);
+  border-radius: 4px;
+  box-shadow: none;
+}
+#holo-map-shell .maplibregl-ctrl-group button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--control-button-size);
+  min-height: var(--control-button-size);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--control-icon-color);
+  filter: none;
+  line-height: 1;
+}
+#holo-map-shell .maplibregl-ctrl-group button:hover:not(:disabled) {
+  background: rgba(105, 236, 255, .12);
+}
+#holo-map-shell .maplibregl-ctrl-zoom-in:not(:disabled) .maplibregl-ctrl-icon,
+#holo-map-shell .maplibregl-ctrl-zoom-out:not(:disabled) .maplibregl-ctrl-icon {
+  filter: brightness(0) saturate(100%) invert(35.7%) sepia(28.1%) saturate(1508.9%) hue-rotate(186.2deg) brightness(202%) contrast(157.8%);
+}
+#holo-map-shell .maplibregl-ctrl-zoom-in:disabled .maplibregl-ctrl-icon,
+#holo-map-shell .maplibregl-ctrl-zoom-out:disabled .maplibregl-ctrl-icon {
+  filter: grayscale(1) brightness(0) invert(70%);
+  opacity: .3;
+}
+#holo-map-shell .maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out {
+  border-top: 1px solid var(--zoom-divider-color);
+}
+#holo-map-shell .holo-rotate-button {
+  font-size: 26px;
+}
+#holo-map-shell .maplibregl-ctrl-group button.holo-reset-button {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+#holo-map-shell .maplibregl-ctrl-scale {
+  color: #d8f8ff;
+  background: rgba(4, 30, 43, .85);
+  border-color: var(--accent);
+}
+
+.note { color: #8ca8b8; font-size: .80rem; margin: 13px 0 0; }
+.note a { color: #8feeff; }
+.site-footer { margin-top: 24px; color: #8ca8b8; font-size: .75rem; }
+.site-footer a { color: #8feeff; }
+
+@media (max-width: 1024px) {
+  #holo-place-card {
+    top: auto;
+    bottom: 12px;
+    left: 12px;
+    width: min(420px, calc(100% - 24px));
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    padding: 14px 44px 14px 14px;
+    font-size: .92rem;
+  }
+}
+@media (max-width: 600px) {
+  #holo-place-card { width: calc(100% - 24px); font-size: .9rem; }
+  .map-hud {
+    gap: 3px;
+    padding: 4px 5px;
+    font-size: 9px;
+  }
+  .map-hud span + span { padding-left: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #holo-place-card.is-highlighted { animation: none; }
+}
